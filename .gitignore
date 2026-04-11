@@ -1,0 +1,31 @@
+#Não vou mentir, essa parte eu pedi pro Claude fazer
+# Ambiente virtual
+.venv/
+
+# Banco de dados
+db.sqlite3
+
+# Cache do Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Arquivos de ambiente e segredos
+.env
+*.env
+local_settings.py
+
+# Arquivos estáticos coletados
+staticfiles/
+media/
+
+# IDEs
+.vscode/
+.idea/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Migrações (opcional — depende da equipe)
+# app_solar_salesmen/migrations/*.py  ← só ignore se quiser

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+  
+    <title>Login</title>
+  </head>
+  <body>
+    <h1>Faça o Login</h1>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+        <form action="{% url 'login' %}" method="POST">
+            {% csrf_token %}
+            <input type="text" placeholder="Username..." name="username" required>
+            <input type="password" placeholder="Senha..." name="senha" required>
+            <button type="submit" class="btn">Entrar</button>
+
+        </form>
+        <a href="{% url 'cadastro' %}" class="link">
+                 Possui conta? Faça o cadastro
+            </a>
+  </body>
+</html>

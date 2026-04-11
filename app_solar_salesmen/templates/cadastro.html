@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+  
+    <title>Pagina de cadastro</title>
+  </head>
+  <body>
+    <h1>Cadastro</h1>
+            {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert {{ message.tags }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+        <form action="{%url 'cadastro' %}" method="POST">
+            {% csrf_token %}
+                <input type="text" placeholder="Username..." name="username" required>
+                <input type="email" placeholder="Email..." name="email" required>
+                <input type="password" placeholder="Senha..." name="senha" required>
+                <input type="password" name="confirmar_senha" placeholder="Confirmar senha" required>
+
+                <button type="submit" class="btn">Cadastrar</button>
+        </form>
+        <a href="{% url 'login' %}" class="link">
+                 Não tem conta? Faça login
+            </a>
+
+  </body>
+</html>
