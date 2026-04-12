@@ -19,6 +19,10 @@ def login(request):
 
         if user:
             login_django(request, user)
+            if user.groups.filter(name='Admin').exists():
+                return redirect('diretoria')  
+            else:
+                return redirect('paginaInicial')  
             return redirect('')
         else:
             messages.error(request, 'Username ou senha invalidos')
@@ -44,6 +48,34 @@ def cadastro(request):
         user.save()
 
         return redirect('login')
+
+def is_admin(user):
+    return user.is_authenticated and user.groups.filter(name='Admin').exists()
+
+@user_passes_test(is_admin, login_url='paginaInicial')
+def diretoria(request):
+    usuarios = User.objects.exclude(groups__name='Admin')
+    usuariosf = User.objects.filter(groups__name='Admin')
+    return render(request, 'diretoria.html', {
+        'usuarios': usuarios,
+        'usuariosf': usuariosf
+        })
+
+@user_passes_test(is_admin, login_url='paginaInicial')
+def tornar_admin(request):
+     if request.method == "POST":
+        user_id= request.POST.get('user_id')
+        user = get_object_or_404(User, id=user_id)
+        grupo, _ = Group.objects.get_or_create(name='Admin')
+        acao = request.POST.get('acao')
+        if acao=="tornar":
+            user.groups.add(grupo)
+        else:
+            user.groups.remove(grupo)
+        return redirect('diretoria')
+     
+def paginaInicial(request):
+    return render(request, 'vendedor.html')
 
 def table_append(request):
     if request.method == "POST":
