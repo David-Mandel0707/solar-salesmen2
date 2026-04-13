@@ -1,27 +1,30 @@
-<!doctype html>
-<html lang="pt-br">
-  <head>
-  
-    <title>Login</title>
-  </head>
-  <body>
-    <h1>Faça o Login</h1>
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert {{ message.tags }}">
-                {{ message }}
-            </div>
-        {% endfor %}
-    {% endif %}
-        <form action="{% url 'login' %}" method="POST">
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <img src="{% static 'imagens/logo.png' %}" class="logo">
+        <h2>Faça o Login</h2>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        <form method="POST">
             {% csrf_token %}
             <input type="text" placeholder="Username..." name="username" required>
             <input type="password" placeholder="Senha..." name="senha" required>
-            <button type="submit" class="btn">Entrar</button>
-
+            <button type="submit">Entrar</button>
         </form>
-        <a href="{% url 'cadastro' %}" class="link">
-                 Possui conta? Faça o cadastro
-            </a>
-  </body>
-</html>
+
+        <a href="{% url 'cadastro' %}">
+            Não tem conta? Cadastre-se
+        </a>
+    </div>
+</div>
+
+{% endblock %}
