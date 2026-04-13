@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <title>Diretoria</title>
+</head>
+<body>
+    <h1>Diretoria</h1>
+
+    <div>
+        <h2>Adicionar Admin</h2>
+
+        <form method="POST" action="{% url 'tornar_admin' %}">
+            {% csrf_token %}
+
+            <select name="user_id">
+                {% for usuario in usuarios %}
+                    <option value="{{ usuario.id }}">{{ usuario.username }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" name="acao" value="tornar">
+                Tornar Admin
+            </button>
+        </form>
+
+        <h2>Remover Admin</h2>
+
+        <form method="POST" action="{% url 'tornar_admin' %}">
+            {% csrf_token %}
+
+            <select name="user_id">
+                {% for usuariof in usuariosf %}
+                    <option value="{{ usuariof.id }}">{{ usuariof.username }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" name="acao" value="remover">
+                Remover Admin
+            </button>
+        </form>
+    </div>
+</body>
+</html>
