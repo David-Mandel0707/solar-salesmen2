@@ -148,3 +148,42 @@ def makegraph(request):
             fig = px.pie(df, names=names, values=values)
 
         return render(request, 'diretoria.html', {'grafico': fig})
+
+@login_required
+def realizar_venda(request):
+    if request.method == "POST":
+        produto_id = request.POST.get("produto")
+        quantidade = int(request.POST.get("quantidade"))
+        produto = Produto.objects.get(id=produto_id)
+        if produto.estoque >= quantidade:
+            Venda.objects.create(
+                produto=produto,
+                vendedor=request.user,
+                quantidade=quantidade
+            )
+            produto.estoque -= quantidade
+            produto.save()
+        return redirect('paginaInicial')
+    produtos = Produto.objects.all()
+    vendas = Venda.objects.filter(vendedor=request.user)
+    return render(request, "vendedor.html", {
+        "produtos": produtos,
+        "vendas": vendas
+    })
+
+@login_required
+def editar_venda(request, venda_id):
+    venda = get_object_or_404(Venda, id=venda_id)
+    if venda.vendedor != request.user:
+        return redirect('paginaInicial')
+    if request.method == "POST":
+        quantidade = int(request.POST.get("quantidade"))
+        venda.quantidade = quantidade
+        venda.save()
+        return redirect('paginaInicial')
+    return render(request, "editar_venda.html", {"venda": venda})
+
+@login_required
+def listar_vendas(request):
+    vendas = Venda.objects.filter(vendedor=request.user)
+    return render(request, "vendedor.html", {"vendas": vendas})
