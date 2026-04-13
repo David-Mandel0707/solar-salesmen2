@@ -1,19 +1,77 @@
-<form method="POST" action="{% url 'table_append' %}">
-    <label>Produto vendido:</label>
-    <select name="selection" id="selection">
-        <option id="selection", value="01">Painel Solar Monocristalino 550W - R$ 1.200,00</option>
-        <option id="selection", value="02">Inversor Solar 5kW (On-Grid) - R$ 4.500,00</option>
-        <option id="selection", value="03">Inversor Solar 10kW (On-Grid) - R$ 7.800,00</option>
-        <option id="selection", value="04">Controlador de Carga MPPT 60A - R$ 1.500,00</option>
-        <option id="selection", value="05">Bateria Solar de Lítio 5kWh - R$ 9.500,00</option>
-        <option id="selection", value="06">Bateria Estacionária Chumbo-Ácido 220Ah - R$ 1.200,00</option>
-        <option id="selection", value="07">Kit Estrutura para Telhado (10 painéis) - R$ 2.000,00</option>
-        <option id="selection", value="08">Cabeamento Solar (kit completo 50m) - R$ 800,00</option>
-        <option id="selection", value="09">Sistema de Monitoramento Solar (App + Hardware) - R$ 1.000,00</option>
-        <option id="selection", value="10">Kit Completo Energia Solar Residencial 5kWp - R$ 25.000,00</option>
-        <option id="selection", value="11">Serviço de instalação - preço a definir na hora da venda</option>
+<!DOCTYPE html>
+<html>
+
+<form id="form_venda">
+    {% csrf_token %}
+
+    <label style="display: block;">Produto vendido:</label>
+    <select name="selection" id="selection" style="display: block;">
+        <option value="">--Selecione--</option>
+        {% for item in Produtos %}
+            <option value="{{item.id}}">{{item.id}} -- {{item.nome}} -- R${{item.valor}} -- Estoque: {{item.estoque}}</option>
+        {% endfor %}
     </select>
-    <label>Quantidade:</label>
-    <input name="qtd" id="qtd" type="number" min="1" required></input>
-    <button type="submit">Enviar</button>
+
+    <label id="label_custom_valor" style="display: none;">Valor da instalação:</label>
+    <input id="custom_valor" style="display: none;" name="custom_valor">
+
+    <script>
+        const selection = document.getElementById("selection")
+        const label_custom_valor = document.getElementById("label_custom_valor")
+        const custom_valor = document.getElementById("custom_valor")
+        selection.addEventListener('change', function(){
+            if (this.value === '1') {
+                custom_valor.style.display = 'block'
+                label_custom_valor.style.display = 'block'
+            } else {
+                custom_valor.style.display = 'none'
+                label_custom_valor.style.display = 'none'
+            }
+        })
+    </script>
+    <label style="display: block;">Quantidade:</label>
+    <input name="qtd" id="qtd" type="number" min="1" style="display: block;" required>
+    <p id="mensagem_venda"></p>
+    <button type="button" onclick="realizar_venda()">Enviar</button>
 </form>
+
+<script>
+    function realizar_venda() {
+        const form = document.getElementById('form_venda')
+        const formData = new FormData(form)
+        fetch("{% url 'realizar_venda' %}", {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            body: formData
+        })
+        .then(res => res.json())
+        .then(dados => {
+            document.getElementById('mensagem_venda').innerText = dados.mensagem
+        })
+    }
+</script>
+<table>
+    <thead>
+        <tr>
+            <th>Produto</th>
+            <th>Quantidade</th>
+            <th>Faturamento</th>
+            <th>Data</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for venda in vendas %}
+        <tr>
+            <td>{{ venda.produto.nome }}</td>
+            <td>{{ venda.qtd }}</td>
+            <td>R$ {{ venda.fat }}</td>
+            <td>{{ venda.date }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">Nenhuma venda registrada.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</html>
