@@ -92,10 +92,10 @@
             <td>{{ produto.valor }}</td>
             <td>{{ produto.estoque }}</td>
             <td>
-                <form method="POST" style="display:inline;">
+                <form method="POST" action="{% url 'remover_produto' %}" style="display:inline;">
                     {% csrf_token %}
                     <input type="hidden" name="produto_id" value="{{ produto.id }}">
-                    <button name="remover_produto">
+                    <button type="submit">
                         Remover
                     </button>
                 </form>
@@ -106,28 +106,27 @@
 
     <!--Add Produto-->
     <h3>Adicionar Produto</h3>
-    <form method="POST">
+    <form method="POST" action="{% url 'adicionar_produto' %}">
         {% csrf_token %}
 
         <div class="campo">
             <label>Nome:</label>
-            <input type="text" name="nome" required>
+            <input type="text" name="nome" id="nome" required>
         </div>
 
         <div class="campo">
             <label>Valor:</label>
-            <input type="number" step="0.01" name="valor" required>
+            <input type="number" step="0.01" name="valor" id="valor" required>
         </div>
 
         <div class="campo">
             <label>Estoque:</label>
-            <input type="number" name="estoque" required>
+            <input type="number" name="estoque" id="estoque" required>
         </div>
 
-        <button type="button" onclick="adicionar_produto()">
-    Adicionar Produto
-</button>
-    </form>
+    <button type="submit">Adicionar Produto</button>
+</form>
+
 </div>
 
 <!--Vendas-->
@@ -182,7 +181,11 @@
         </form>
     </div>
 </div>
-
+<div class="secao">
+    <a href="{% url 'cadastro' %}">
+        <button>Cadastrar novo vendedor</button>
+    </a>
+</div>
 <!--Logout-->
 <div class="secao">
     <a href="{% url 'logout' %}">
@@ -223,8 +226,7 @@ function gerar_grafico() {
         })
     })
 }
-
-function adicionar_produto() {
+document.getElementById('enviar').addEventListener('click', function() {
     fetch("{% url 'adicionar_produto' %}", {
         method: 'POST',
         headers: {
@@ -241,24 +243,19 @@ function adicionar_produto() {
     .then(dados => {
         if (dados.sucesso) {
             const tabela = document.getElementById('tabela_produtos')
-
             const novaLinha = tabela.insertRow()
-
             novaLinha.innerHTML = `
                 <td>${dados.nome}</td>
                 <td>${dados.valor}</td>
                 <td>${dados.estoque}</td>
                 <td>
-                    <button onclick="remover_produto(${dados.id})">
-                        Remover
-                    </button>
+                    <button onclick="remover_produto(${dados.id})">Remover</button>
                 </td>
             `
-
-            document.getElementById('form_produto').reset()
+            document.getElementById('form_adicionar').reset()
         }
     })
-}
+})
 </script>
 
 {% endblock %}

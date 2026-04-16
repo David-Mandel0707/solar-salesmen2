@@ -23,10 +23,10 @@ def login(request):
 
         if user:
             login_django(request, user)
-            if user.is_superuser or user.is_staff or user.groups.filter(name='admin').exists():
+            if user.groups.filter(name='admin').exists():
                 return redirect('diretoria')  
             else:
-                return redirect('vendedor') 
+                return redirect('paginaInicial') 
         else:
             messages.error(request, 'Username ou senha invalidos')
             return render(request, 'login.html')
@@ -53,18 +53,22 @@ def cadastro(request):
         return redirect('login')
 
 def is_admin(user):
-    return user.is_authenticated and (user.is_superuser or user.is_staff or user.groups.filter(name='admin').exists())
+    return user.is_authenticated and user.groups.filter(name='admin').exists()
 
-@user_passes_test(is_admin, login_url='login')
+@user_passes_test(is_admin, login_url='paginaInicial')
 def diretoria(request):
     usuarios = User.objects.filter(is_staff=False).exclude(id=request.user.id)
-    usuariosf = User.objects.filter(is_staff=True).exclude(id=request.user.id)
+    usuariosf = User.objects.filter(groups__name='admin')
+    produtos = Produto.objects.all()
+    vendas = Venda.objects.all()
     return render(request, 'diretoria.html', {
         'usuarios': usuarios,
-        'usuariosf': usuariosf
+        'usuariosf': usuariosf,
+        'produtos': produtos,
+        'vendas': vendas
         })
 
-@user_passes_test(is_admin, login_url='login')
+@user_passes_test(is_admin, login_url='paginaInicial')
 def tornar_admin(request):
      if request.method == "POST":
         user_id= request.POST.get('user_id')
@@ -82,7 +86,7 @@ def paginaInicial(request):
     produtos = Produto.objects.all()
     vendas = Venda.objects.filter(vendedor=request.user)
     return render(request, 'vendedor.html', {
-        'Produtos': produtos,
+        'Produtos': produtos,  # tem que ser exatamente 'Produtos' para bater com o template
         'vendas': vendas
     })
 
@@ -93,9 +97,9 @@ def makegraph(request):
         data_fim = request.POST.get('data_fim')
         vendas = Venda.objects.select_related('vendedor', 'produto').all()
         if data_inicio:
-            vendas = vendas.filter(date__gte=data_inicio)
+            vendas = Venda.filter(date__gte=data_inicio)
         if data_fim:
-            vendas = vendas.filter(date__lte=data_fim)
+            vendas = Venda.filter(date__lte=data_fim)
         rows = [(v.vendedor.username, v.produto.nome, v.qtd, v.fat) for v in vendas]
         df = pd.DataFrame(rows, columns=['vendedor', 'produto', 'qtd', 'fat'])
         if graphtype == 'bar':
@@ -120,12 +124,17 @@ def realizar_venda(request):
         produto_id = request.POST.get("selection")
         quantidade = int(request.POST.get("qtd"))
         produto = get_object_or_404(Produto, id=produto_id)
+        custom_valor = request.POST.get("custom_valor")
+        if custom_valor:
+            valor_final = float(custom_valor)
+        else:
+            valor_final = produto.valor
         if produto.estoque >= quantidade:
             Venda.objects.create(
                 produto=produto,
                 vendedor=request.user,
                 qtd=quantidade,
-                fat=produto.valor*quantidade
+                fat=(produto.valor*quantidade)+valor_final
             )
             produto.estoque -= quantidade
             produto.save()
@@ -148,32 +157,17 @@ def listar_vendas(request):
 
 def adicionar_produto(request):
     if request.method == "POST":
-        dados = json.loads(request.body)
-        produto = Produto.objects.create(
-            nome=dados.get('nome'),
-            valor=float(dados.get('valor')),
-            estoque=int(dados.get('estoque'))
+        nome = request.POST.get('nome')
+        valor = float(request.POST.get('valor'))
+        estoque = int(request.POST.get('estoque'))
+
+        Produto.objects.create(
+            nome=nome,
+            valor=valor,
+            estoque=estoque
         )
-        return JsonResponse({
-            'sucesso': True,
-            'id': produto.id,
-            'nome': produto.nome,
-            'valor': produto.valor,
-            'estoque': produto.estoque
-        })
-    
-def remover_produto(request):
-    if request.method == "POST":
-        import json
-        data = json.loads(request.body)
-        produto_id = data.get("id")
-        try:
-            produto = Produto.objects.get(id=produto_id)
-            produto.delete()
-            return JsonResponse({"sucesso": True})
-        except Produto.DoesNotExist:
-            return JsonResponse({"sucesso": False, "erro": "Produto não encontrado"})
-    
+
+        return redirect('diretoria')
 @login_required
 def editar_venda(request):
     if request.method == "POST":
@@ -197,13 +191,43 @@ def editar_venda(request):
         return JsonResponse({'mensagem': 'Venda atualizada com sucesso!'})
 
     return JsonResponse({'mensagem': 'Erro'})
+@login_required
+def apagar_venda(request):
+    if request.method == "POST":
+        venda_id = request.POST.get("venda_id")
 
-def login_view(request):
-    return render(request, 'login.html')
+        if not venda_id:
+            return JsonResponse({'mensagem': 'ID inválido'})
 
-def ajuda(request):
-        return render(request, 'ajuda.html')
+        venda = get_object_or_404(Venda, id=venda_id)
+
+        if venda.vendedor != request.user:
+            return JsonResponse({'mensagem': 'Sem permissão'})
+
+        venda.delete()
+
+        return JsonResponse({'mensagem': 'Venda apagada com sucesso!'})
+
+    return JsonResponse({'mensagem': 'Erro'})
+@login_required
+def remover_produto(request):
+    if request.method == "POST":
+        produto_id = request.POST.get("produto_id")
+
+        if not produto_id:
+            return redirect('diretoria')
+
+        produto = get_object_or_404(Produto, id=produto_id)
+
+        produto.delete()
+
+        return redirect('diretoria')
+
+    return redirect('diretoria')   
 
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+def cadastro_view(request):
+    return redirect('cadastro')

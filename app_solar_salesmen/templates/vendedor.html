@@ -3,120 +3,126 @@
 {% block title %}Vendas{% endblock %}
 
 {% block content %}
-<h1>Painel do Vendedor</h1>
 
-<div class="secao">
-    <h2>Realizar Venda</h2>
+<form id="form_venda">
+    {% csrf_token %}
 
-    <form id="form_venda">
-        {% csrf_token %}
+    <label style="display: block;">Produto vendido:</label>
+    <select name="selection" id="selection" style="display: block;">
+        <option value="">--Selecione--</option>
+        {% for item in Produtos %}
+            <option value="{{item.id}}">{{item.id}} -- {{item.nome}} -- R${{item.valor}} -- Estoque: {{item.estoque}}</option>
+        {% endfor %}
+    </select>
 
-        <div class="campo">
-            <label>Produto vendido:</label>
-            <select name="selection" id="selection">
-                <option value="">--Selecione--</option>
-                {% for item in Produtos %}
-                    <option value="{{item.id}}">
-                        {{item.id}} -- {{item.nome}} -- R${{item.valor}} -- Estoque: {{item.estoque}}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="campo" id="campo_custom" style="display:none;">
-            <label id="label_custom_valor">Valor da instalação:</label>
-            <input id="custom_valor" name="custom_valor">
-        </div>
-
-        <div class="campo">
-            <label>Quantidade:</label>
-            <input name="qtd" id="qtd" type="number" min="1" required>
-        </div>
-
-        <p id="mensagem_venda"></p>
-
-        <button type="button" onclick="realizar_venda()">Enviar</button>
-    </form>
-</div>
-
-<div class="secao">
-    <h2>Editar Vendas</h2>
-
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Produto</th>
-                <th>Quantidade</th>
-                <th>Faturamento</th>
-                <th>Data</th>
-                <th>Ação</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            {% for venda in vendas %}
-            <tr>
-                <td>{{ venda.produto.nome }}</td>
-
-                <td>
-                    <input type="number" value="{{ venda.qtd }}" min="1" id="qtd_{{venda.id}}">
-                </td>
-
-                <td>R$ {{ venda.fat }}</td>
-                <td>{{ venda.date }}</td>
-
-                <td>
-                    <button onclick="editarVenda('{{ venda.id }}')">Salvar</button>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5">Nenhuma venda registrada.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <label id="label_custom_valor" style="display: none;">Valor da instalação:</label>
+    <input id="custom_valor" style="display: none;" name="custom_valor">
 
     <script>
-    function editarVenda(venda_id) {
-        const qtd = document.getElementById(`qtd_${venda_id}`).value
+       selection.addEventListener('change', function(){
+    const texto = this.options[this.selectedIndex].text
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // remove acentos
 
-        const formData = new FormData()
-        formData.append('venda_id', venda_id)
-        formData.append('qtd', qtd)
-        formData.append('csrfmiddlewaretoken', getCSRFToken())
+    if (texto.includes('instala')) {
+        custom_valor.style.display = 'block'
+        label_custom_valor.style.display = 'block'
+    } else {
+        custom_valor.style.display = 'none'
+        label_custom_valor.style.display = 'none'
+    }
+})
+    </script>
+    <label style="display: block;">Quantidade:</label>
+    <input name="qtd" id="qtd" type="number" min="1" style="display: block;" required>
+    <p id="mensagem_venda"></p>
+    <button type="button" onclick="realizar_venda()">Enviar</button>
+</form>
 
-        fetch("{% url 'editar_venda' %}", {
+<script>
+    function realizar_venda() {
+        const form = document.getElementById('form_venda')
+        const formData = new FormData(form)
+        fetch("{% url 'realizar_venda' %}", {
             method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
             body: formData
         })
         .then(res => res.json())
-        .then(data => {
-            alert(data.mensagem)
-            location.reload()
+        .then(dados => {
+            document.getElementById('mensagem_venda').innerText = dados.mensagem
         })
     }
-    </script>
-</div>
 
-<div class="logout-container">
-    <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
-</div>
+</script>
+<table>
+    <thead>
+        <tr>
+            <th>Produto</th>
+            <th>Quantidade</th>
+            <th>Faturamento</th>
+            <th>Data</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for venda in vendas %}
+        <tr>
+            <td>{{ venda.produto.nome }}</td>
+
+            <td>
+                <input type="number" value="{{ venda.qtd }}" min="1" id="qtd_{{ venda.id }}">
+            </td>
+
+            <td>R$ {{ venda.fat }}</td>
+            <td>{{ venda.date }}</td>
+
+            <td>
+                <button onclick="editarVenda('{{ venda.id }}')">Salvar</button>
+                <button onclick="apagarVenda('{{ venda.id }}')">Remover</button>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">Nenhuma venda registrada.</td>
+        </tr>
+        {% endfor %}
+        <a href="{% url 'logout' %}">
+            <button> Sair</button>
+    </tbody>
+</table>
+
 <script>
-    function getCSRFToken() {
-        return document.querySelector('[name=csrfmiddlewaretoken]').value;
-    }
-    function editarVenda(venda_id) {
-        const qtd = document.getElementById(`qtd_${venda_id}`).value
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+function editarVenda(venda_id) {
+    const qtd = document.getElementById(`qtd_${venda_id}`).value
 
+    const formData = new FormData()
+    formData.append('venda_id', venda_id)
+    formData.append('qtd', qtd)
+    formData.append('csrfmiddlewaretoken', getCSRFToken())
+
+    fetch("{% url 'editar_venda' %}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.mensagem)
+        location.reload()
+    })
+}
+
+    function apagarVenda(venda_id) {
         const formData = new FormData()
         formData.append('venda_id', venda_id)
-        formData.append('qtd', qtd)
         formData.append('csrfmiddlewaretoken', getCSRFToken())
 
-        fetch("{% url 'editar_venda' %}", {
+        fetch("{% url 'apagar_venda' %}", {
             method: 'POST',
-            body: formData
+           body: formData
         })
         .then(res => res.json())
         .then(data => {
@@ -125,4 +131,5 @@
         })
     }
 </script>
+
 {% endblock %}
